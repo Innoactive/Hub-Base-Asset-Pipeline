@@ -1,0 +1,7 @@
+converter:
+    slug: "dummy-0"
+    class: NoopConverter
+connection:
+    host: localhost
+    port: 8000
+    path: assets/pipeline/
