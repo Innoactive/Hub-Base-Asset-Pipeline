@@ -1,0 +1,3 @@
+[submodule "unity-project"]
+	path = unity-project
+	url = git@github.com:Innoactive/HOLOCLOUD-converter-unity-project.git
