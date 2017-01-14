@@ -1,5 +1,6 @@
-import sys, subprocess, getopt, json
-from os import path, makedirs
+import sys
+import getopt
+from os import makedirs
 import json
 import urllib
 import requests
@@ -336,7 +337,6 @@ def main(argv):
         platform_slug=platform_slug
     )
     converter.start()
-
 
 if __name__ == "__main__":
     main(sys.argv[1:])
