@@ -4,4 +4,4 @@ converter:
 connection:
     host: localhost
     port: 8000
-    path: assets/pipeline/
+    path: assets/pipeline

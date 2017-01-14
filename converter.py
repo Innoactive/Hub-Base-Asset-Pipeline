@@ -1,23 +1,21 @@
-import sys, time, subprocess, json, posixpath, getopt
+import sys, subprocess, getopt, json
 from os import path, makedirs
 import json
 import urllib
 import requests
 import websocket
-
 from logs import logger
-from _config import *
+from settings import *
 # import all available converters
 import converters
 # import yaml lib for config files
 import yaml
-
-
-# Socket IO Client based on
-# https://github.com/invisibleroads/socketIO-client
+from utils import num
 
 
 class Converter(object):
+    # default protocol for downloads is http
+    protocol = 'http'
     # the (web)socket over which we'll communicate with the holocloud
     socket = None
     # the class of the converter to be used
@@ -27,13 +25,19 @@ class Converter(object):
     # the port over which to connect
     port = 8000
     # the path at which to connect to the host
-    connect_path = 'assets/pipeline/'
+    connect_path = 'assets/pipeline'
+    # uniquely identying slug of the platform this converter works for
+    platform_slug = None
+    platform = None
+    # the actual instance of the converter doing the heavy lifting
+    converter_instance = None
 
     def __init__(self,
                  converter_class=None,
                  host=None,
                  port=None,
-                 connect_path=None):
+                 connect_path=None,
+                 platform_slug=None):
         if host is not None:
             self.host = host
         if port is not None:
@@ -42,12 +46,18 @@ class Converter(object):
             self.connect_path = connect_path
         if converter_class is not None:
             self.converter_class = converter_class
+        if platform_slug is not None:
+            self.platform_slug = platform_slug
         # try to instantiate the converter with the available config file
         class_ = getattr(converters, self.converter_class)
-        conv_instance = class_()
+        self.converter_instance = class_(platform_slug=self.platform_slug)
+        logger.info('Running based on %s' % self.converter_instance)
 
     def disconnect(self):
-        self.socket.off('start-conversion')
+        """
+        disconnect the open socket
+        :return:
+        """
         self.socket.disconnect()
 
     def on_socket_open(self, websocket):
@@ -56,7 +66,7 @@ class Converter(object):
         :param websocket: the newly opened websocket instance
         :return:
         """
-        logger.info('Now connected to holocloud!')
+        logger.info('Successfully connected to holocloud!')
 
     def on_socket_message(self, websocket, message):
         """
@@ -65,7 +75,21 @@ class Converter(object):
         :param message:
         :return:
         """
-        logger.info(message)
+        # the message should be json, try to parse it now
+        msg = json.loads(message)
+        # check if a message type is included
+        if isinstance(msg, dict):
+            # check what kind of message we got
+            if 'type' in msg:
+                msg_type = msg.get('type')
+                if msg_type == MessageType.CONVERSION_START:
+                    # the msg needs to contain some data in order to convert anything
+                    if 'data' in msg:
+                        model = msg.get('data')
+                        logger.info('Starting to convert. Model data is %s' % model)
+                        self.convert(model)
+                    else:
+                        logger.warn('Should start converting, but data is missing from message: \n%s' % message)
 
     def on_socket_close(self, websocket):
         """
@@ -73,7 +97,7 @@ class Converter(object):
         :param websocket: the websocket instance which was closed
         :return:
         """
-        logger.info('Socket closed')
+        logger.info('Connection to Holocloud closed')
 
     def on_socket_error(self, websocket, error):
         """
@@ -82,136 +106,179 @@ class Converter(object):
         :param error:
         :return:
         """
-        logger.error(websocket)
-        logger.error(error)
+        # logger.error(websocket)
+        # logger.error(error)
+        pass
 
     def connect(self, host, port, connect_path):
         """
         connect to the holocloud using (web)sockets
+        :param connect_path: the path at which to connect to the server (e.g. /websocket/chat)
         :param host: the hostname under which holocloud is available
         :param port: the port under which holocloud is available
         :return:
         """
         logger.info('trying to connect to {}:{}'.format(host, port))
         # identify the converter against the host using the converter-type parameter
-        self.socket = websocket.WebSocketApp('ws://{}:{}:8000/{}'.format(host, port, connect_path),
-                                             on_message=self.on_socket_message,
-                                             on_error=self.on_socket_error,
-                                             on_close=self.on_socket_close,
-                                             on_open=self.on_socket_open)
+        self.socket = websocket.WebSocketApp(
+            'ws://{}:{}:8000/{}/{}'.format(host, port, connect_path, self.platform_slug),
+            on_message=self.on_socket_message,
+            on_error=self.on_socket_error,
+            on_close=self.on_socket_close,
+            on_open=self.on_socket_open,
+            header={
+                PLATFORM_SLUG_HEADER: self.platform_slug
+            }
+        )
         # let it run forever
         self.socket.run_forever()
 
-    def on_start_conversion(self, *args):
-        # get model id and input path from the received data
-        input_data = args[0]
-        engine = input_data['engine']
-        model_id = input_data['model_id']
-        files = input_data['files']
-        # only handle requests that match the selected Converter
-        if engine == self.converter_class:
-            logger.info('starting conversion ...')
-            # assert both values exists
-            assert model_id, 'No Model ID has been passed'
-            assert files, 'No files have been provided'
-            # download all the files and move them to a folder of our liking
-            download_folder = path.join(TMP_FILES_PATH, 'convertible_{}'.format(model_id))
-            output_folder = path.join(download_folder, 'converted')
-            if not path.exists(download_folder):
-                makedirs(download_folder)
-            if not path.exists(output_folder):
-                makedirs(output_folder)
-            # make sure to remove all files from the tmp download folder first
-            for file in files:
-                self.download_file_to_be_converted(file, download_folder)
-            # convert posix path to whatever system we're on
-            input_path = download_folder
-            logger.info('now starting conversion progress for file {}'.format(input_path))
-            result = self.convert(input_path, output_folder)
-            # conversion is done, send the converter-finished event
-            # but check if there is a result first
-            if result:
-                result['engine'] = input_data['engine']
-                result['model_id'] = model_id
-                if result.get('success', True):
-                    logger.info('successfully converted file')
-                    logger.info(result)
-                    # the model attribute in the result json points to the converted model
-                    # now re-upload the converted model to the asset backend
-                    self.upload_result(result, output_folder)
-                else:
-                    logger.warn('failed converting')
-                # and finally emit the success method
-                self.socket.emit('finish conversion', result)
-            else:
-                # no result, so conversion appears to have failed
-                result = input_data
-                del result['files']
-                result['success'] = False
-                self.socket.emit('finish conversion', result)
-
-    def upload_result(self, result, output):
-        url = 'http://{}:{}/{}/{}'.format(self.host, self.port, 'api/models', result['model_id'], result['engine'])
-        files = {'file': open(path.join(output, result['model']), 'rb')}
-        r = requests.post(url, files=files)
-        # should be alright, but if not, raise an exception
-        r.raise_for_status()
-
-    def download_file_to_be_converted(self, url, folder):
-        testfile = urllib.URLopener()
-        testfile.retrieve('http://{}:{}/{}'.format(self.host, self.port, url), path.join(folder, path.basename(url)))
-
-    def convert(self, input_path, output_folder):
-        output_path = path.join(CONVERTED_FILES_PATH, output_folder)
-        logger.info(
-            'starting conversion of files in folder {} and outputting it to {}'.format(
-                input_path,
-                output_path
-            )
-        )
-        if self.converter_class in self.supported_converters_lut.keys():
-            converter_script_path = self.supported_converters_lut.get(self.converter_class)
+    def start_conversion_progress(self, model):
+        """
+        signal to be executed right before file conversion starts
+        :return:
+        """
+        self.socket.send(json.dumps({
+            'type': MessageType.CONVERSION_PROGRESS,
+            'model_id': model.get('id')
+        }))
+        # we will need the platform model on which we're working, so try to create it now
+        url = '{proto}://{host}:{port}/api/platformmodels/'.format(proto=self.protocol, host=self.host, port=self.port)
+        payload = {
+            "model": model.get('id'),
+            "platform": self.platform['id'],
+            "conversion_state": ConversionState.IN_PROGRESS
+        }
+        response = requests.request("POST", url, json=payload)
+        # check if the operation was successful
+        if 200 <= response.status_code < 300:
+            # parse the response
+            return response.json()
         else:
-            raise NotImplementedError('Converter {} is not supported (yet)'.format(self.converter_class))
-        command = 'python {} -i {} -o {}'.format(
-            converter_script_path,
-            input_path,
-            output_path
-        )
-        logger.info('')
-        logger.info(command)
-        logger.info('')
-        try:
-            result = subprocess.check_output(command.split(),
-                                             stderr=subprocess.STDOUT,
-                                             shell=False)
-            # the last line of the output holds the path to the resulting json file
-            # which we'll need to inform the backend about all the created files
-            lines = result.split('\n')
-            result_json = json.loads(lines[len(lines) - 2])
-            return result_json
-        except subprocess.CalledProcessError as err:
-            logger.error(err.output)
+            logger.error('Could not create platform model')
+            logger.error(response.text)
+            return None
+
+    def finish_conversion_progress(self, platform_model, converted_file_path):
+        """
+        signal to be executed right after file conversion has ended
+        :param converted_file_path: the file path at which the converted file is located
+        :param model: the model data
+        :return:
+        """
+        logger.info(
+            'Model %s successfully converted. Resulting file is located at %s' % (
+                str(platform_model.get('model')), converted_file_path))
+        # upload the converted file
+        # and update the conversion_progress
+        self.upload_conversion_result(platform_model, converted_file_path)
+
+    def convert(self, model):
+        """
+        makes sure to download files and then use the appropriate converter to convert the provided model
+        :param model:
+        :return:
+        """
+        # only handle requests that match the selected Converter
+        logger.info('Sarting conversion of model %s ...' % model.get('id'))
+        # download all the files and move them to a folder of our liking
+        model_working_directory = path.join(TMP_FILES_PATH, str(model.get('id')))
+        download_folder = path.join(model_working_directory, 'original')
+        output_folder = path.join(model_working_directory, 'converted')
+        # make sure the folder exist
+        if not path.exists(download_folder):
+            makedirs(download_folder)
+        if not path.exists(output_folder):
+            makedirs(output_folder)
+        # download the specified file
+        input_path = self.download_file(model.get('upload').get('file'), download_folder)
+        # convert posix path to whatever system we're on
+        logger.info('now starting conversion progress for file {}'.format(input_path))
+        # execute the start_conversion_progress hook
+        working_model = self.start_conversion_progress(model)
+        if working_model is None:
+            logger.error('Could not initialize a suitable Platform Model to work on. Aborting Conversion Process')
+        else:
+            logger.info(working_model)
+            # get the converter instance to do the heavy lifting for us
+            converted_file_path = self.converter_instance.convert(input_path, output_folder)
+            self.finish_conversion_progress(working_model, converted_file_path)
+
+    def upload_conversion_result(self, platform_model, result_file_path):
+        """
+        uploads the converted model back to the holocloud
+        :param platform_model:
+        :param result_file_path:
+        :return:
+        """
+        url = '{proto}://{host}:{port}/{path}/{id}/'.format(proto=self.protocol, host=self.host,
+                                                            port=self.port,
+                                                            path='api/platformmodels', id=platform_model['id'])
+        logger.debug('Uploading file to %s' % url)
+        # attach the conversion result as a file to the post request
+        # also set the state to finished
+        payload = {
+            'file': open(result_file_path, 'rb'),
+            # the empty string in the tuple will prevent of setting a filename for this non file value
+            'conversion_state': ('', ConversionState.FINISHED)
+        }
+        response = requests.request("PUT", url, files=payload)
+        logger.info(response.text)
+        # if we get an error, show it.
+        response.raise_for_status()
+
+    def download_file(self, _path, folder):
+        """
+        downloads the file located on the server at _path
+        :param _path: the location of the file on the server
+        :param folder: download folder
+        :return:
+        """
+        downloader = urllib.URLopener()
+        outfile_path = path.join(folder, path.basename(_path))
+        url = '{proto}://{host}:{port}{path}'.format(proto=self.protocol, host=self.host, port=self.port, path=_path)
+        logger.debug('Downloading file from %s' % url)
+        downloader.retrieve(url, outfile_path)
+        return outfile_path
 
     def start(self):
         """
         start this converter and connect it to the holocloud
         :return:
         """
-        # first of all, try to connect
-        self.connect(self.host, self.port, self.connect_path)
+        # first of all, find out details about the platform we're working on. We'll need that one later on
+        self.platform = self.retrieve_platform_by_slug(self.platform_slug)
+        if self.platform is None:
+            logger.error(
+                'Could not load platform details for platform {slug}. '
+                'Please check if the provided platform slug is correct'.format(
+                    slug=self.platform_slug))
+        else:
+            logger.info('Platform is {}'.format(self.platform))
+            self.connect(self.host, self.port, self.connect_path)
 
+    def retrieve_platform_by_slug(self, slug):
+        """
+        retrieves information about the platform that this converter works for
 
-def num(s):
-    """
-    tries to cast a string to an integer / float value
-    :param s:
-    :return:
-    """
-    try:
-        return int(s)
-    except ValueError:
-        return float(s)
+        identified by the platform_slug
+        :param slug:
+        :return:
+        """
+        url = '{proto}://{host}:{port}/api/platforms/slugs/{slug}'.format(proto=self.protocol, host=self.host,
+                                                                          port=self.port, slug=slug)
+        response = requests.request("GET", url)
+        if 200 <= response.status_code < 300:
+            return response.json()
+        else:
+            return None
+
+    def stop(self):
+        """
+        stop this converter and disconnect from holocloud
+        :return:
+        """
+        self.disconnect()
 
 
 USAGE_MESSAGE = 'usage: python {} [-c <converter>][-h <host>][-p <port>][-P <path>]'.format(__file__)
@@ -224,6 +291,7 @@ def print_usage():
 def main(argv):
     # default values
     selected_converter_class = None
+    platform_slug = None
     hostname = None
     port = None
     connect_path = None
@@ -231,13 +299,16 @@ def main(argv):
     # open the file
     with open('config.yml', 'r') as stream:
         conf = yaml.load(stream)
-        print conf
         if conf.get('connection', None) is not None:
             base = conf.get('connection', None)
             hostname = base.get('hostname', hostname)
             port = num(base.get('port', port))
+        if conf.get('converter', None) is not None:
+            base = conf.get('converter', None)
+            selected_converter_class = base.get('class', selected_converter_class)
+            platform_slug = base.get('slug')
     try:
-        opts, args = getopt.getopt(argv, "hc:H:p:P:", ["converter=", "hostname=", "port=", "path="])
+        opts, args = getopt.getopt(argv, "hc:H:p:P:s:", ["converter=", "hostname=", "port=", "path=", "slug="])
     except getopt.GetoptError:
         print_usage()
         sys.exit(2)
@@ -253,13 +324,16 @@ def main(argv):
             port = num(arg)
         elif opt in ("-P", "--path"):
             connect_path = arg
+        elif opt in ("-s", "--slug"):
+            platform_slug = arg
     # create new Converter instance
     # and connect to socket.io server
     converter = Converter(
         converter_class=selected_converter_class,
         host=hostname,
         port=port,
-        connect_path=connect_path
+        connect_path=connect_path,
+        platform_slug=platform_slug
     )
     converter.start()
 

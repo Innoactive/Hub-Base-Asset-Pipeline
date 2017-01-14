@@ -45,3 +45,15 @@ def convert_os_path_to_posix_path(pth):
 
     folders.reverse()
     return posixpath.join(*folders)
+
+
+def num(s):
+    """
+    tries to cast a string to an integer / float value
+    :param s:
+    :return:
+    """
+    try:
+        return int(s)
+    except ValueError:
+        return float(s)

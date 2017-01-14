@@ -2,6 +2,7 @@ import os
 import shutil
 from distutils.dir_util import copy_tree
 from os import path
+from logs import logger
 
 
 class AbstractConverter(object):
@@ -20,13 +21,17 @@ class AbstractConverter(object):
     """
     platform_slug = None
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, platform_slug=None):
+        if platform_slug is not None:
+            self.platform_slug = platform_slug
+        else:
+            raise ValueError('Please provide the uniquely identifying platform slug to the converter!')
         if config is not None:
             # validate the configuration
             if self.validate_configuration(config):
                 self.config = config
             else:
-                raise AttributeError('The provided configuration could not be validated. Please verify')
+                raise AttributeError('The provided configuration could not be validated. Please verify!')
 
     def validate_configuration(self, config):
         """
@@ -52,6 +57,9 @@ class AbstractConverter(object):
         :return:
         """
         raise NotImplementedError('Subclasses of the AbstractConverter must implement the convert method')
+
+    def __str__(self):
+        return '%s "%s"' % (self.__class__.__name__, self.platform_slug)
 
 
 class AbstractFbxConverter(AbstractConverter):
