@@ -32,13 +32,16 @@ class Converter(object):
     platform = None
     # the actual instance of the converter doing the heavy lifting
     converter_instance = None
+    # the global configuration object
+    config = None
 
     def __init__(self,
                  converter_class=None,
                  host=None,
                  port=None,
                  connect_path=None,
-                 platform_slug=None):
+                 platform_slug=None,
+                 config=None):
         if host is not None:
             self.host = host
         if port is not None:
@@ -49,9 +52,11 @@ class Converter(object):
             self.converter_class = converter_class
         if platform_slug is not None:
             self.platform_slug = platform_slug
+        if config is not None:
+            self.config = config
         # try to instantiate the converter with the available config file
         class_ = getattr(converters, self.converter_class)
-        self.converter_instance = class_(platform_slug=self.platform_slug)
+        self.converter_instance = class_(config=config.get('converter').get('config'))
         logger.info('Running based on %s' % self.converter_instance)
 
     def disconnect(self):
@@ -294,22 +299,23 @@ def main(argv):
     selected_converter_class = None
     platform_slug = None
     hostname = None
+    config = None
     port = None
     connect_path = None
     # try to read values from config file
     # open the file
     with open('config.yml', 'r') as stream:
-        conf = yaml.load(stream)
-        if conf.get('connection', None) is not None:
-            base = conf.get('connection', None)
+        config = yaml.load(stream)
+        if config.get('connection', None) is not None:
+            base = config.get('connection', None)
             hostname = base.get('hostname', hostname)
             port = num(base.get('port', port))
-        if conf.get('converter', None) is not None:
-            base = conf.get('converter', None)
+        if config.get('converter', None) is not None:
+            base = config.get('converter', None)
             selected_converter_class = base.get('class', selected_converter_class)
             platform_slug = base.get('slug')
     try:
-        opts, args = getopt.getopt(argv, "hc:H:p:P:s:", ["converter=", "hostname=", "port=", "path=", "slug="])
+        opts, args = getopt.getopt(argv, "hc:C:H:p:P:s:", ["converter=", "config=", "hostname=", "port=", "path=", "slug="])
     except getopt.GetoptError:
         print_usage()
         sys.exit(2)
@@ -318,6 +324,8 @@ def main(argv):
             print_usage()
             sys.exit()
         elif opt in ("-c", "--converter"):
+            selected_converter_class = arg
+        elif opt in ("-C", "--config"):
             selected_converter_class = arg
         elif opt in ("-H", "--hostname"):
             hostname = arg
@@ -334,7 +342,8 @@ def main(argv):
         host=hostname,
         port=port,
         connect_path=connect_path,
-        platform_slug=platform_slug
+        platform_slug=platform_slug,
+        config=config
     )
     converter.start()
 

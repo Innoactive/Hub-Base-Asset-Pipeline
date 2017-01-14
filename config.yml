@@ -1,6 +1,9 @@
 converter:
-    slug: "dummy-0"
-    class: NoopConverter
+    slug: "unity-550f3"
+    class: UnityZippedFbxConverter
+    config:
+        unity_executable: b
+        unity_converter_project_path: d
 connection:
     host: localhost
     port: 8000

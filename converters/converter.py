@@ -1,31 +1,17 @@
-import os
-import shutil
-from distutils.dir_util import copy_tree
 from os import path
-from logs import logger
 
 
 class AbstractConverter(object):
     """
-    list of filetypes this converter can handle
+    base converter implementation from which all converters are to be derived
     """
+    # list of filetypes this converter can handle
     supported_filetypes = []
 
-    """
-    configuration options
-    """
+    # configuration options
     config = None
 
-    """
-    the uniquely identifying slug for the platform that this converter works for
-    """
-    platform_slug = None
-
-    def __init__(self, config=None, platform_slug=None):
-        if platform_slug is not None:
-            self.platform_slug = platform_slug
-        else:
-            raise ValueError('Please provide the uniquely identifying platform slug to the converter!')
+    def __init__(self, config=None):
         if config is not None:
             # validate the configuration
             if self.validate_configuration(config):
@@ -59,7 +45,7 @@ class AbstractConverter(object):
         raise NotImplementedError('Subclasses of the AbstractConverter must implement the convert method')
 
     def __str__(self):
-        return '%s "%s"' % (self.__class__.__name__, self.platform_slug)
+        return '%s' % self.__class__.__name__
 
 
 class AbstractFbxConverter(AbstractConverter):
@@ -69,30 +55,8 @@ class AbstractFbxConverter(AbstractConverter):
     supported_filetypes = ['.fbx']
 
 
-class NoopConverter(AbstractFbxConverter):
+class AbstractZippedFbxConverter(AbstractFbxConverter):
     """
-    Platform independent dummy fbx converter (noop)
+    Base Converter for fbx files
     """
-    def convert(self, input_file, output_folder):
-        """
-        noop conversion process -> copy input_file(s) to output_folder
-        :param input_file:
-        :param output_folder:
-        :return:
-        """
-        # clean up before starting
-        # clear all files from the output_folder
-        # to do so, just delete the entire folder
-        if path.exists(output_folder):
-            shutil.rmtree(output_folder)
-        # ... and recreate it afterwards
-        os.makedirs(output_folder)
-        # start copying everything from the input_file's folder to the output folder
-        from_dir = path.dirname(input_file)
-        to_dir = output_folder
-        copy_tree(from_dir, to_dir)
-        # return the path to the "converted" file
-        return path.join(output_folder, path.basename(input_file))
-
-    def validate_configuration(self, config):
-        return True
+    supported_filetypes = ['.zip']
