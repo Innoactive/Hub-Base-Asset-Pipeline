@@ -290,7 +290,7 @@ class RemoteAssetPipeline(object):
         self.disconnect()
 
 
-USAGE_MESSAGE = 'usage: python {} [-c <converter>][-h <host>][-p <port>][-P <path>]'.format(__file__)
+USAGE_MESSAGE = 'usage: python {} [-H <host>][-P <port>][-p <pipeline-class>][-s <slug>]'.format(__file__)
 
 
 def print_usage():
@@ -317,7 +317,7 @@ def main(argv):
             pipeline_class = base.get('class', pipeline_class)
             platform_slug = base.get('slug')
     try:
-        opts, args = getopt.getopt(argv, "hH:c:p:P:s:", ["pipeline-path=", "config=", "hostname=", "port=", "slug="])
+        opts, args = getopt.getopt(argv, "hH:c:p:P:s:", ["pipeline-class=", "config=", "hostname=", "port=", "slug="])
     except getopt.GetoptError:
         print_usage()
         sys.exit(2)
@@ -326,8 +326,6 @@ def main(argv):
             print_usage()
             sys.exit()
         elif opt in ("-p", "--pipeline-class"):
-            pipeline_class = arg
-        elif opt in ("-c", "--config"):
             pipeline_class = arg
         elif opt in ("-H", "--hostname"):
             hostname = arg
