@@ -1,6 +1,6 @@
 converter:
     slug: "unity-550f3"
-    class: UnityZippedFbxConverter
+    class: UnityZippedFbxPipeline
     config:
         unity_executable: b
         unity_converter_project_path: d

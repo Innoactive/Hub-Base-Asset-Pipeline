@@ -12,7 +12,7 @@ TMP_FILES_PATH = path.abspath(
 )
 
 # the header to be used to identify the platform of a converter
-PLATFORM_SLUG_HEADER = "Holocloud-Converter-Slug"
+PLATFORM_SLUG_HEADER = "Holocloud-RemoteAssetPipeline-Slug"
 
 
 class MessageType(object):

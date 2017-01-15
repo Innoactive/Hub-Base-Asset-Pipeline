@@ -7,20 +7,20 @@ import requests
 import websocket
 from logs import logger
 from settings import *
-# import all available converters
-import converters
+# import all available pipelines
+import pipelines
 # import yaml lib for config files
 import yaml
 from utils import num
 
 
-class Converter(object):
+class RemoteAssetPipeline(object):
     # default protocol for downloads is http
     protocol = 'http'
     # the (web)socket over which we'll communicate with the holocloud
     socket = None
     # the class of the converter to be used
-    converter_class = 'NoopConverter'
+    pipeline_class = 'NoopPipeline'
     # the host to conenct to
     host = 'localhost'
     # the port over which to connect
@@ -36,26 +36,26 @@ class Converter(object):
     config = None
 
     def __init__(self,
-                 converter_class=None,
+                 pipeline_class=None,
                  host=None,
                  port=None,
-                 connect_path=None,
                  platform_slug=None,
-                 config=None):
+                 config=None,
+                 connect_path=None):
         if host is not None:
             self.host = host
         if port is not None:
             self.port = port
         if connect_path is not None:
             self.connect_path = connect_path
-        if converter_class is not None:
-            self.converter_class = converter_class
+        if pipeline_class is not None:
+            self.pipeline_class = pipeline_class
         if platform_slug is not None:
             self.platform_slug = platform_slug
         if config is not None:
             self.config = config
         # try to instantiate the converter with the available config file
-        class_ = getattr(converters, self.converter_class)
+        class_ = getattr(pipelines, self.pipeline_class)
         self.converter_instance = class_(config=config.get('converter').get('config'))
         logger.info('Running based on %s' % self.converter_instance)
 
@@ -185,7 +185,7 @@ class Converter(object):
         :param model:
         :return:
         """
-        # only handle requests that match the selected Converter
+        # only handle requests that match the selected RemoteAssetPipeline
         logger.info('Sarting conversion of model %s ...' % model.get('id'))
         # download all the files and move them to a folder of our liking
         model_working_directory = path.join(TMP_FILES_PATH, str(model.get('id')))
@@ -299,12 +299,11 @@ def print_usage():
 
 def main(argv):
     # default values
-    selected_converter_class = None
+    pipeline_class = None
     platform_slug = None
     hostname = None
     config = None
     port = None
-    connect_path = None
     # try to read values from config file
     # open the file
     with open('config.yml', 'r') as stream:
@@ -315,10 +314,10 @@ def main(argv):
             port = num(base.get('port', port))
         if config.get('converter', None) is not None:
             base = config.get('converter', None)
-            selected_converter_class = base.get('class', selected_converter_class)
+            pipeline_class = base.get('class', pipeline_class)
             platform_slug = base.get('slug')
     try:
-        opts, args = getopt.getopt(argv, "hc:C:H:p:P:s:", ["converter=", "config=", "hostname=", "port=", "path=", "slug="])
+        opts, args = getopt.getopt(argv, "hH:c:p:P:s:", ["pipeline-path=", "config=", "hostname=", "port=", "slug="])
     except getopt.GetoptError:
         print_usage()
         sys.exit(2)
@@ -326,29 +325,27 @@ def main(argv):
         if opt == '-h':
             print_usage()
             sys.exit()
-        elif opt in ("-c", "--converter"):
-            selected_converter_class = arg
-        elif opt in ("-C", "--config"):
-            selected_converter_class = arg
+        elif opt in ("-p", "--pipeline-class"):
+            pipeline_class = arg
+        elif opt in ("-c", "--config"):
+            pipeline_class = arg
         elif opt in ("-H", "--hostname"):
             hostname = arg
-        elif opt in ("-p", "--port"):
+        elif opt in ("-P", "--port"):
             port = num(arg)
-        elif opt in ("-P", "--path"):
-            connect_path = arg
         elif opt in ("-s", "--slug"):
             platform_slug = arg
-    # create new Converter instance
+    # create new RemoteAssetPipeline instance
     # and connect to socket.io server
-    converter = Converter(
-        converter_class=selected_converter_class,
+    remote_asset_pipe = RemoteAssetPipeline(
+        pipeline_class=pipeline_class,
         host=hostname,
         port=port,
-        connect_path=connect_path,
         platform_slug=platform_slug,
         config=config
     )
-    converter.start()
+    remote_asset_pipe.start()
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

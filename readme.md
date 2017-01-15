@@ -17,6 +17,13 @@ documentation](https://github.com/Innoactive/HOLOCLOUD-backend) directly.
 
 t.b.d
 
+### Configuration
+
+The holocloud asset pipeline can be configured through the provided `config.yml` file.
+
+Depending on the chosen pipeline implementation, different settings apply.
+Please refer to the documentation of the respective pipeline for more information.
+
 ## Development
 
 t.b.d

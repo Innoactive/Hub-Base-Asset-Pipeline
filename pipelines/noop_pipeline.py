@@ -3,11 +3,11 @@ import shutil
 from distutils.dir_util import copy_tree
 from os import path
 
-from converters.converter import AbstractFbxConverter
+from pipelines.base import AbstractFbxPipeline
 from logs import logger
 
 
-class NoopConverter(AbstractFbxConverter):
+class NoopPipeline(AbstractFbxPipeline):
     """
     Platform independent dummy fbx converter (noop)
     """

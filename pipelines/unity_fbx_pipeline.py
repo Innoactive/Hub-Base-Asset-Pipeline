@@ -9,10 +9,10 @@ from _winreg import *
 import re
 
 from logs import logger
-from converters.converter import AbstractZippedFbxConverter
+from pipelines.base import AbstractZippedFbxPipeline
 
 
-class UnityZippedFbxConverter(AbstractZippedFbxConverter):
+class UnityZippedFbxPipeline(AbstractZippedFbxPipeline):
     unity_executable = None
     unity_converter_project_path = None
 
@@ -38,7 +38,7 @@ class UnityZippedFbxConverter(AbstractZippedFbxConverter):
         # path from which we'll retrieve the AssetBundle (= conversion result)
         asset_bundles_path = path.join(self.unity_converter_project_path, *['Assets', 'AssetBundles'])
         # clean up before starting
-        # clear all files from the converters project's content folder
+        # clear all files from the pipelines project's content folder
         # to do so, just delete the entire folder
         if path.exists(bundle_assets_path):
             shutil.rmtree(bundle_assets_path)

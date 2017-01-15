@@ -1,9 +1,9 @@
 from os import path
 
 
-class AbstractConverter(object):
+class AbstractPipeline(object):
     """
-    base converter implementation from which all converters are to be derived
+    base converter implementation from which all pipelines are to be derived
     """
     # list of filetypes this converter can handle
     supported_filetypes = []
@@ -25,7 +25,7 @@ class AbstractConverter(object):
         :param config:
         :return:
         """
-        raise NotImplementedError('Subclasses of the AbstractConverter must implement the validate_configuration method')
+        raise NotImplementedError('Subclasses of the AbstractPipeline must implement the validate_configuration method')
 
     def supports(self, input_file):
         """
@@ -42,21 +42,21 @@ class AbstractConverter(object):
         :param output_folder:
         :return:
         """
-        raise NotImplementedError('Subclasses of the AbstractConverter must implement the convert method')
+        raise NotImplementedError('Subclasses of the AbstractPipeline must implement the convert method')
 
     def __str__(self):
         return '%s' % self.__class__.__name__
 
 
-class AbstractFbxConverter(AbstractConverter):
+class AbstractFbxPipeline(AbstractPipeline):
     """
-    Base Converter for fbx files
+    Base RemoteAssetPipeline for fbx files
     """
     supported_filetypes = ['.fbx']
 
 
-class AbstractZippedFbxConverter(AbstractFbxConverter):
+class AbstractZippedFbxPipeline(AbstractFbxPipeline):
     """
-    Base Converter for fbx files
+    Base RemoteAssetPipeline for fbx files
     """
     supported_filetypes = ['.zip']
