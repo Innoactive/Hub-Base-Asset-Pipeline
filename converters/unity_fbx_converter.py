@@ -66,18 +66,26 @@ class UnityZippedFbxConverter(AbstractZippedFbxConverter):
             import_result = subprocess.check_output(fbx_import_cmd,
                                                     stderr=subprocess.STDOUT,
                                                     shell=False)
-            # if we get here, we are successful
+            # if we get here, we are successful (probably)
+            # let's check ...
+            regex_fail = re.compile('\*\*\*\s*Cancelled \'Build\.AssetBundle.*')
             # also store how long the import command took us. Might be interesting later on
+            # compile our regular expression to find the result line in the logfile
+            import_duration = '0s'
+            regex_duration = re.compile(
+                '^----- Total AssetImport time:\s([0-9\.]*s)(.*)\[([0-9\.]*)\s.*\s([0-9\.]*)\smb/s\]')
             # to do so, take a look at the log file that has been written
             logfile = open(log_file_path, 'r')
-            # compile our regular expression to find the result line in the logfile
-            regex = re.compile('^----- Total AssetImport time:\s([0-9\.]*s)(.*)\[([0-9\.]*)\s.*\s([0-9\.]*)\smb/s\]')
-            import_duration = '0s'
             for line in logfile:
-                match = regex.search(line)
-                if match and float(match.group(3)) > 0:
-                    import_duration = match.group(1)
-            print 'Import took {}'.format(import_duration)
+                match_fail = regex_fail.search(line)
+                if match_fail:
+                    logger.error(
+                        'Conversion process failed. Please take a look at the logs located at %s for details' % log_file_path)
+                    return None
+                match_duration = regex_duration.search(line)
+                if match_duration and float(match_duration.group(3)) > 0:
+                    import_duration = match_duration.group(1)
+            logger.info('Import took {}'.format(import_duration))
             # now that the contents are converted to an asset bundle, we are nearly done
             # step 4, check results and copy back converted results
             # search for the virtual-showroom-bundle in the asset_bundles_path output path

@@ -208,7 +208,10 @@ class Converter(object):
             logger.info(working_model)
             # get the converter instance to do the heavy lifting for us
             converted_file_path = self.converter_instance.convert(input_path, output_folder)
-            self.finish_conversion_progress(working_model, converted_file_path)
+            if converted_file_path is None:
+                logger.error('Conversion failed for Model %s.' % model.get('id'))
+            else:
+                self.finish_conversion_progress(working_model, converted_file_path)
 
     def upload_conversion_result(self, platform_model, result_file_path):
         """
