@@ -181,6 +181,12 @@ class UnityZippedFbxPipeline(AbstractZippedFbxPipeline):
     def find_unity_in_win_registry():
         """
         opens up the windows registry in the hopes of finding the path to the unity executable
+
+        However, one drawback is that the registry only points to the last version of Unity that
+        has been installed. E.g. if you first install version 5.5 and 5.4 afterwards,
+        the registry will point to 5.4.
+        (see HKEY_CURRENT_USER\SOFTWARE\Unity Technologies\Installer\Unity)
+
         :return: the path to the unity executable if it has been found, false otherwise
         """
         # name of the unity installer dir
