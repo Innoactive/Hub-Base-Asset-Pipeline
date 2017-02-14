@@ -17,12 +17,23 @@ documentation](https://github.com/Innoactive/HOLOCLOUD-backend) directly.
 
 t.b.d
 
-#### Requirements
+## Requirements
 
 - Python 2.7.x
 - Virtualenv
 
-#### Setup
+## Setup
+
+### Submodules
+
+Before installing anything, make sure that you have correctly set up your git repository and initialized
+all git submodules. To do so, run
+
+```
+git submodule update --init --recursive
+```
+
+### Dependencies
 
 Run `virtualenv venv` in the project's folder. Afterwards activate the virtual environment by running
 `.\venv\Scripts\activate` (or similar, depending on your terminal). Last but not least, install
@@ -31,7 +42,7 @@ all requirements in the virtual environment by running `pip install -r requireme
 You should now be good to go and start the pipeline with `python pipeline.py`. However, check
 out the [configuration](#configuration) part for more information on the available options.
 
-### Configuration
+## Configuration
 
 The holocloud asset pipeline can be configured through the provided `config.yml` file.
 
