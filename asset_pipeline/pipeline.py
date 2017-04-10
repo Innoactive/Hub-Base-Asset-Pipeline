@@ -284,14 +284,16 @@ class PlatformSpecificAssetPipelineMixin(object):
     }
 
     def __init__(self,
-                 platform_slug=None,
+                 config=None,
                  *args,
                  **kwargs):
         # call parent constructor (taking care of config validation)
-        super(PlatformSpecificAssetPipelineMixin, self).__init__(*args, **kwargs)
+        super(PlatformSpecificAssetPipelineMixin, self).__init__(config=config, *args, **kwargs)
         # handle the platform slug parameter
-        if platform_slug is not None:
-            self.platform_slug = platform_slug
+        if 'platform_slug' in config:
+            self.platform_slug = config['platform_slug']
+        else:
+            logger.warn("No Platform Slug provided. Platform Specific pipeline will probably not work.")
         # store the platform slug in the list of additional headers
         self.additional_headers['PLATFORM_SLUG_HEADER'] = self.platform_slug
 
