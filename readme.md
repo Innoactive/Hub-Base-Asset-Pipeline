@@ -26,9 +26,34 @@ pip install -U git+https://github.com/Innoactive/HOLOCLOUD-asset-pipeline-connec
 
 Afterwards, your pipeline implementation should be based on `BaseRemoteAssetPipeline`. 
 
-You can establish a connection between your newly created pipeline and the holocloud® by running
-`start-asset-pipeline` and providing a configuration file `pipeline.ini` like the following. All of these
-settings will be forwarded to your pipeline implementation.
+You can establish a connection between your newly created pipeline and the holocloud® by creating 
+a command line script like the following: 
+
+```python
+import asset_pipeline.arguments as arguments
+from <your-pipeline-module> import <YourAssetPipelineImplementation>
+
+
+def main():
+    # parse all available configuration information
+    config = arguments.parse()
+    print config
+    # create new RemoteAssetPipeline instance
+    # and connect to socket.io server
+    asset_pipeline = <YourAssetPipelineImplementation>(
+        config=config
+    )
+    asset_pipeline.start()
+
+
+if __name__ == "__main__":
+    main()
+
+```
+
+and running it via `python command_line.py`, optionally providing a configuration file `pipeline.ini` 
+like the following. All of these settings will be forwarded to your pipeline implementation if you call
+`python command_line.py -c pipeline.ini`.
 
 ```ini
 [Connection]
