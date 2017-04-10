@@ -303,7 +303,7 @@ class PlatformSpecificAssetPipelineMixin(object):
         # we will need the platform-specific asset_data on which we're working, so try to create it now
         url = '{proto}://{host}:{port}/api/platformmodels/'.format(proto=self.protocol, host=self.host, port=self.port)
         payload = {
-            "asset_data": asset_data.get('id'),
+            "model": asset_data.get('id'),
             "platform": self.platform['id'],
             "conversion_state": ConversionState.IN_PROGRESS
         }
