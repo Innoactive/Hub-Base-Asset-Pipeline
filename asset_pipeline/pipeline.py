@@ -118,18 +118,25 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
 
     def __init__(self,
                  config=None,
-                 host=None,
-                 port=None,
                  *args,
                  **kwargs):
         # call parent constructor (taking care of config validation)
         super(BaseRemoteAssetPipeline, self).__init__(config=config, *args, **kwargs)
-        # handle the remaining parameters
-        if host is not None:
-            self.host = host
-        if port is not None:
-            self.port = port
+        # update host and port values
+        self.host = config.host
+        self.port = config.port
         logger.info('Running based on %s' % self)
+
+    def validate_configuration(self, config):
+        # make sure hostname and port are set
+        if 'host' not in config:
+            logger.error("Hostname needs to be provided in order to connect the pipeline to the holocloud®")
+            return False
+        if 'port' not in config:
+            logger.error("Port needs to be provided in order to connect the pipeline to the holocloud®")
+            return False
+        # if we got here, everything's fine
+        return True
 
     @staticmethod
     def on_socket_open(socket):

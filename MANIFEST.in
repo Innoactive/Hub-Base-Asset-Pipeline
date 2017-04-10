@@ -1,2 +1,2 @@
 include readme.md
-include config.yml
+include pipeline.ini

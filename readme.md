@@ -24,10 +24,20 @@ Use this pip package in a concrete implementation of an asset pipeline by instal
 pip install -U git+https://github.com/Innoactive/HOLOCLOUD-asset-pipeline-connector@0.1.0
 ```
 
-Afterwards, your pipeline implementation should be based on `AbstractPipeline`. 
+Afterwards, your pipeline implementation should be based on `BaseRemoteAssetPipeline`. 
 
 You can establish a connection between your newly created pipeline and the holocloud® by running
-`xyz - todo` and providing configuration like // TODO.
+`start-asset-pipeline` and providing a configuration file `pipeline.ini` like the following. All of these
+settings will be forwarded to your pipeline implementation.
+
+```ini
+[Connection]
+host=127.0.0.1
+port=8000
+[Pipeline]
+my_custom_setting=123
+foo=bar
+```
 
 #### Requirements
 
