@@ -123,8 +123,8 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         # call parent constructor (taking care of config validation)
         super(BaseRemoteAssetPipeline, self).__init__(config=config, *args, **kwargs)
         # update host and port values
-        self.host = config.host
-        self.port = config.port
+        self.host = config['host']
+        self.port = config['port']
         logger.info('Running based on %s' % self)
 
     def validate_configuration(self, config):

@@ -50,4 +50,4 @@ def parse():
     connection_group.add_argument("-P", "--port", type=int, help="port at which to connect to the holocloud®")
     connection_group.set_defaults(**connection_defaults)
     # finally, get all parsed arguments
-    return parser.parse_args(remaining_argv)
+    return vars(parser.parse_args(remaining_argv))
