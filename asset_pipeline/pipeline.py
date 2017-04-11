@@ -95,7 +95,7 @@ class AbstractAssetPipeline(object):
         """
         # get the filename of the asset to be handled
         input_file = asset_data.get('upload', {}).get('file')
-        return path.split(input_file)[1] in self.supported_filetypes
+        return path.splitext(input_file)[1] in self.supported_filetypes
 
     def __str__(self):
         return '%s' % self.__class__.__name__
