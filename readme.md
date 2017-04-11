@@ -64,6 +64,18 @@ my_custom_setting=123
 foo=bar
 ```
 
-#### Requirements
+## Requirements
 
 - Python 2.7.x
+
+## Existing Pipelines
+
+The following pipelines have already been successfully implemented and integrated with the holocloud®:
+
+- [PDF Conversion Pipeline](https://github.com/Innoactive/HOLOCLOUD-pdf-pipeline)
+
+  Reads in a pdf file and outputs a set of high-resolution images that can be easily rendered
+
+- [Unity FBX Conversion Pipeline](https://github.com/Innoactive/HOLOCLOUD-fbx-pipeline-unity)
+
+  Reads in a fbx or zipped fbx file and outputs a Unity Asset Bundle which can be loaded at runtime
