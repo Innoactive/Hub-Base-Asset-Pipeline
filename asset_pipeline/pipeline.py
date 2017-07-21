@@ -113,6 +113,8 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
     host = 'localhost'
     # the port over which to connect
     port = 8000
+    # whether or not to enforce ssl
+    ssl = False
     # the path at which to connect to the host for working packages
     connect_path = 'assets/pipeline/'
     # dictionary of additional headers to be included in an connection attempt
@@ -127,6 +129,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         # update host and port values
         self.host = config['host']
         self.port = config['port']
+        self.ssl = config['ssl']
         logger.info('Running based on %s' % self)
 
     def validate_configuration(self, config):
@@ -257,7 +260,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         logger.info('trying to connect to {}:{}'.format(self.host, self.port))
         # identify the converter against the host using the converter-type parameter
         self.socket = websocket.WebSocketApp(
-            'ws://{}:{}/{}'.format(self.host, self.port, self.connect_path),
+            '{}://{}:{}/{}'.format('wss' if self.ssl else 'ws', self.host, self.port, self.connect_path),
             on_message=self.on_socket_message,
             on_error=self.on_socket_error,
             on_close=self.on_socket_close,
