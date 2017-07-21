@@ -130,6 +130,8 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         self.host = config['host']
         self.port = config['port']
         self.ssl = config['ssl']
+        if self.ssl:
+            self.protocol = self.protocol + 's'
         logger.info('Running based on %s' % self)
 
     def validate_configuration(self, config):
