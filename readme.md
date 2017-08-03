@@ -14,14 +14,14 @@ Remote asset pipelines can be scaled individually and independently of the holoc
 will use this connector package and its base pipeline implementation as a pip package.**
 
 For more information on the architecture of the holocloud ecosystem, please refer to the [holocloud's
-documentation](https://github.com/Innoactive/HOLOCLOUD-backend) directly.
+documentation](https://github.com/Innoactive/Hub-Backend) directly.
 
 ## How to Use
 
 Use this pip package in a concrete implementation of an asset pipeline by installing it in the following way using pip:
 
 ```bash
-pip install -U git+https://github.com/Innoactive/HOLOCLOUD-asset-pipeline-connector@0.1.0
+pip install -U git+https://github.com/Innoactive/Hub-Base-Asset-Pipeline.git@0.1.0
 ```
 
 Afterwards, your pipeline implementation should be based on `BaseRemoteAssetPipeline`. 

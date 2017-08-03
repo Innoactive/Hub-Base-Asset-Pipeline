@@ -116,7 +116,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
     # whether or not to enforce ssl
     ssl = False
     # the path at which to connect to the host for working packages
-    connect_path = 'assets/pipeline/'
+    connect_path = 'ws/assets/pipeline/'
     # dictionary of additional headers to be included in an connection attempt
     additional_headers = {}
 
