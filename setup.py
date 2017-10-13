@@ -31,7 +31,7 @@ setup(name='holocloud-asset-pipeline',
       keywords=['holocloud', 'assets', 'pipeline', 'connector', 'websocket'],
       packages=['asset_pipeline'],
       install_requires=[
-          'requests',
+          'requests_oauthlib',
           'websocket-client'
       ],
       entry_points={

@@ -1,16 +1,20 @@
 # coding=utf-8
+import os
 import json
 import shutil
 import urllib
 from distutils.dir_util import copy_tree
 from os import makedirs
 
-import requests
 import sys
 import websocket
 
 from logger import logger
 from protocol import *
+from client import ClientCredentialsOAuth2Session
+
+
+RELATIVE_OAUTH_REFRESH_URL = 'oauth/token/'
 
 
 class AbstractAssetPipeline(object):
@@ -130,20 +134,41 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         self.host = config['host']
         self.port = config['port']
         self.ssl = config['ssl']
+        self.client_id = config['client_id']
+        self.client_secret = config['client_secret']
         if self.ssl:
             self.protocol = self.protocol + 's'
+        # set token url and client credentials client for authorized comunication
+        self.token_url = '{0}://{1}:{2}/{3}'.format(self.protocol, self.host,
+                self.port, RELATIVE_OAUTH_REFRESH_URL)
+        self.client = ClientCredentialsOAuth2Session(self.token_url, self.client_id, self.client_secret)
         logger.info('Running based on %s' % self)
 
     def validate_configuration(self, config):
         # make sure hostname and port are set
+        NOT_PROVIDED_ERROR_MSG = '{0} needs to be provided in order to connect the pipeline to the hub'
         if 'host' not in config:
-            logger.error("Hostname needs to be provided in order to connect the pipeline to the holocloud®")
+            logger.error(NOT_PROVIDED_ERROR_MSG.format('Hostname'))
             return False
         if 'port' not in config:
-            logger.error("Port needs to be provided in order to connect the pipeline to the holocloud®")
+            logger.error(NOT_PROVIDED_ERROR_MSG.format('Port'))
+            return False
+        if 'client_id' not in config:
+            logger.error(NOT_PROVIDED_ERROR_MSG.format('Client id'))
+            return False
+        if 'client_secret' not in config:
+            logger.error(NOT_PROVIDED_ERROR_MSG.format('Client secret'))
             return False
         # if we got here, everything's fine
         return True
+
+    def authenticate_headers(self, headers):
+        """
+        Adds valid authorization header to the passed dict
+        """
+        access_token = self.client.get_valid_access_token()
+        headers['Authorization'] = 'Bearer {0}'.format(access_token)
+        return headers
 
     @staticmethod
     def on_socket_open(socket):
@@ -261,13 +286,14 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         """
         logger.info('trying to connect to {}:{}'.format(self.host, self.port))
         # identify the converter against the host using the converter-type parameter
+        authenticated_headers = self.authenticate_headers(self.additional_headers)
         self.socket = websocket.WebSocketApp(
             '{}://{}:{}/{}'.format('wss' if self.ssl else 'ws', self.host, self.port, self.connect_path),
             on_message=self.on_socket_message,
             on_error=self.on_socket_error,
             on_close=self.on_socket_close,
             on_open=self.on_socket_open,
-            header=self.additional_headers
+            header=authenticated_headers
         )
         # let it run forever
         self.socket.run_forever()
@@ -317,7 +343,7 @@ class PlatformSpecificAssetPipelineMixin(object):
             "platform": self.platform['id'],
             "conversion_state": ConversionState.IN_PROGRESS
         }
-        response = requests.request("POST", url, json=payload)
+        response = self.client.request("POST", url, json=payload)
         # check if the operation was successful
         if 200 <= response.status_code < 300:
             # parse the response
@@ -357,7 +383,7 @@ class PlatformSpecificAssetPipelineMixin(object):
         """
         url = '{protocol}://{host}:{port}/api/platforms/slugs/{slug}'.format(protocol=self.protocol, host=self.host,
                                                                              port=self.port, slug=slug)
-        response = requests.request("GET", url)
+        response = self.client.request("GET", url)
         if 200 <= response.status_code < 300:
             return response.json()
         else:
