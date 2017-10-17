@@ -1,20 +1,15 @@
 # coding=utf-8
-import os
 import json
 import shutil
 import urllib
 from distutils.dir_util import copy_tree
 from os import makedirs
 
-import sys
 import websocket
 
 from logger import logger
 from protocol import *
-from client import ClientCredentialsOAuth2Session
-
-
-RELATIVE_OAUTH_REFRESH_URL = 'oauth/token/'
+from client import get_client_for_config
 
 
 class AbstractAssetPipeline(object):
@@ -27,7 +22,7 @@ class AbstractAssetPipeline(object):
     # asset pipeline configuration provided as a dictionary
     config = None
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, *args, **kwargs):
         """
         public constructor / main initialization method
         :param config:
@@ -134,14 +129,10 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         self.host = config['host']
         self.port = config['port']
         self.ssl = config['ssl']
-        self.client_id = config['client_id']
-        self.client_secret = config['client_secret']
         if self.ssl:
             self.protocol = self.protocol + 's'
-        # set token url and client credentials client for authorized comunication
-        self.token_url = '{0}://{1}:{2}/{3}'.format(self.protocol, self.host,
-                self.port, RELATIVE_OAUTH_REFRESH_URL)
-        self.client = ClientCredentialsOAuth2Session(self.token_url, self.client_id, self.client_secret)
+        # authenticated client
+        self.client = get_client_for_config(config)
         logger.info('Running based on %s' % self)
 
     def validate_configuration(self, config):
@@ -153,20 +144,14 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         if 'port' not in config:
             logger.error(NOT_PROVIDED_ERROR_MSG.format('Port'))
             return False
-        if 'client_id' not in config:
-            logger.error(NOT_PROVIDED_ERROR_MSG.format('Client id'))
-            return False
-        if 'client_secret' not in config:
-            logger.error(NOT_PROVIDED_ERROR_MSG.format('Client secret'))
-            return False
         # if we got here, everything's fine
         return True
 
     def authenticate_headers(self, headers):
         """
-        Adds valid authorization header to the passed dict
+        Adds valid authorization header to the passed header dict
         """
-        access_token = self.client.get_valid_access_token()
+        access_token = self.client.access_token
         headers['Authorization'] = 'Bearer {0}'.format(access_token)
         return headers
 
@@ -272,11 +257,15 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         :param folder: download folder
         :return:
         """
-        downloader = urllib.URLopener()
+        CHUNK_SIZE = 2000
         outfile_path = path.join(folder, path.basename(_path))
         url = '{proto}://{host}:{port}{path}'.format(proto=self.protocol, host=self.host, port=self.port, path=_path)
         logger.debug('Downloading file from %s' % url)
-        downloader.retrieve(url, outfile_path)
+        response = self.client.request('GET', url, stream=True)
+        response.raise_for_status()
+        with open(outfile_path, 'wb') as fd:
+            for chunk in response.iter_content(CHUNK_SIZE):
+                fd.write(chunk)
         return outfile_path
 
     def start(self):

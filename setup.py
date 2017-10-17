@@ -1,7 +1,7 @@
 # coding=utf-8
 import os
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def readme():
@@ -29,7 +29,7 @@ setup(name='holocloud-asset-pipeline',
       author_email='benedikt.reiser@gmail.com',
       license='MIT',
       keywords=['holocloud', 'assets', 'pipeline', 'connector', 'websocket'],
-      packages=['asset_pipeline'],
+      packages=find_packages(exclude=['docs', 'tests', 'tests.*']),
       install_requires=[
           'requests_oauthlib',
           'websocket-client'
