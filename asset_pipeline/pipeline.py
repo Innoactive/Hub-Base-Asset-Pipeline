@@ -147,7 +147,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         # if we got here, everything's fine
         return True
 
-    def authenticate_headers(self, headers):
+    def add_authentication_to_headers(self, headers):
         """
         Adds valid authorization header to the passed header dict
         """
@@ -275,7 +275,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         """
         logger.info('trying to connect to {}:{}'.format(self.host, self.port))
         # identify the converter against the host using the converter-type parameter
-        authenticated_headers = self.authenticate_headers(self.additional_headers)
+        authenticated_headers = self.add_authentication_to_headers(self.additional_headers)
         self.socket = websocket.WebSocketApp(
             '{}://{}:{}/{}'.format('wss' if self.ssl else 'ws', self.host, self.port, self.connect_path),
             on_message=self.on_socket_message,

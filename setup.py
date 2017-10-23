@@ -37,5 +37,7 @@ setup(name='holocloud-asset-pipeline',
       entry_points={
           'console_scripts': ['start-asset-pipeline=asset_pipeline.command_line:main'],
       },
+      test_suite='nose.collector',
+      tests_require=['nose', 'requests-mock'],
       include_package_data=True,
       zip_safe=False)
