@@ -17,6 +17,9 @@ pip-selfcheck.json
 # Setuptools distribution folder.
 /dist/
 
+# Setuptools build folder
+build/
+
 # Python egg metadata, regenerated from source files by setuptools.
 /*.egg-info
 
@@ -35,6 +38,8 @@ pip-selfcheck.json
 .idea/sqlDataSources.xml
 .idea/dynamic.xml
 .idea/uiDesigner.xml
+.idea/misc.xml
+.idea/*.iml
 
 # Gradle:
 .idea/gradle.xml

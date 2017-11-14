@@ -1,7 +1,7 @@
 # coding=utf-8
 import os
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def readme():
@@ -29,13 +29,15 @@ setup(name='holocloud-asset-pipeline',
       author_email='benedikt.reiser@gmail.com',
       license='MIT',
       keywords=['holocloud', 'assets', 'pipeline', 'connector', 'websocket'],
-      packages=['asset_pipeline'],
+      packages=find_packages(exclude=['docs', 'tests', 'tests.*']),
       install_requires=[
-          'requests',
+          'requests_oauthlib',
           'websocket-client'
       ],
       entry_points={
           'console_scripts': ['start-asset-pipeline=asset_pipeline.command_line:main'],
       },
+      test_suite='nose.collector',
+      tests_require=['nose', 'requests-mock'],
       include_package_data=True,
       zip_safe=False)

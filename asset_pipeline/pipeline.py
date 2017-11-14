@@ -5,12 +5,11 @@ import urllib
 from distutils.dir_util import copy_tree
 from os import makedirs
 
-import requests
-import sys
 import websocket
 
 from logger import logger
 from protocol import *
+from client import get_client_for_config
 
 
 class AbstractAssetPipeline(object):
@@ -23,7 +22,7 @@ class AbstractAssetPipeline(object):
     # asset pipeline configuration provided as a dictionary
     config = None
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, *args, **kwargs):
         """
         public constructor / main initialization method
         :param config:
@@ -132,18 +131,29 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         self.ssl = config['ssl']
         if self.ssl:
             self.protocol = self.protocol + 's'
+        # authenticated client
+        self.client = get_client_for_config(config)
         logger.info('Running based on %s' % self)
 
     def validate_configuration(self, config):
         # make sure hostname and port are set
+        NOT_PROVIDED_ERROR_MSG = '{0} needs to be provided in order to connect the pipeline to the hub'
         if 'host' not in config:
-            logger.error("Hostname needs to be provided in order to connect the pipeline to the holocloud®")
+            logger.error(NOT_PROVIDED_ERROR_MSG.format('Hostname'))
             return False
         if 'port' not in config:
-            logger.error("Port needs to be provided in order to connect the pipeline to the holocloud®")
+            logger.error(NOT_PROVIDED_ERROR_MSG.format('Port'))
             return False
         # if we got here, everything's fine
         return True
+
+    def add_authentication_to_headers(self, headers):
+        """
+        Adds valid authorization header to the passed header dict
+        """
+        access_token = self.client.access_token
+        headers['Authorization'] = 'Bearer {0}'.format(access_token)
+        return headers
 
     @staticmethod
     def on_socket_open(socket):
@@ -247,11 +257,15 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         :param folder: download folder
         :return:
         """
-        downloader = urllib.URLopener()
+        CHUNK_SIZE = 2000
         outfile_path = path.join(folder, path.basename(_path))
         url = '{proto}://{host}:{port}{path}'.format(proto=self.protocol, host=self.host, port=self.port, path=_path)
         logger.debug('Downloading file from %s' % url)
-        downloader.retrieve(url, outfile_path)
+        response = self.client.request('GET', url, stream=True)
+        response.raise_for_status()
+        with open(outfile_path, 'wb') as fd:
+            for chunk in response.iter_content(CHUNK_SIZE):
+                fd.write(chunk)
         return outfile_path
 
     def start(self):
@@ -261,13 +275,14 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         """
         logger.info('trying to connect to {}:{}'.format(self.host, self.port))
         # identify the converter against the host using the converter-type parameter
+        authenticated_headers = self.add_authentication_to_headers(self.additional_headers)
         self.socket = websocket.WebSocketApp(
             '{}://{}:{}/{}'.format('wss' if self.ssl else 'ws', self.host, self.port, self.connect_path),
             on_message=self.on_socket_message,
             on_error=self.on_socket_error,
             on_close=self.on_socket_close,
             on_open=self.on_socket_open,
-            header=self.additional_headers
+            header=authenticated_headers
         )
         # let it run forever
         self.socket.run_forever()
@@ -317,7 +332,7 @@ class PlatformSpecificAssetPipelineMixin(object):
             "platform": self.platform['id'],
             "conversion_state": ConversionState.IN_PROGRESS
         }
-        response = requests.request("POST", url, json=payload)
+        response = self.client.request("POST", url, json=payload)
         # check if the operation was successful
         if 200 <= response.status_code < 300:
             # parse the response
@@ -357,7 +372,7 @@ class PlatformSpecificAssetPipelineMixin(object):
         """
         url = '{protocol}://{host}:{port}/api/platforms/slugs/{slug}'.format(protocol=self.protocol, host=self.host,
                                                                              port=self.port, slug=slug)
-        response = requests.request("GET", url)
+        response = self.client.request("GET", url)
         if 200 <= response.status_code < 300:
             return response.json()
         else:
