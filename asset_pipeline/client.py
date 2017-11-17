@@ -3,12 +3,13 @@ import sys
 import pickle
 import urllib
 
+
 from oauthlib.oauth2 import LegacyApplicationClient
 from requests_oauthlib import OAuth2Session
-from oauthlib.oauth2.rfc6749.errors import InvalidGrantError
+from oauthlib.oauth2.rfc6749 import errors
 
 from logger import logger
-from oauthlib_extras.oauth2 import MailApplicationClient
+from oauthlib_extras.oauth2 import WebApplicationPushClient
 
 # needed for insecure oauthlib http communication
 # oauth2 is, as per specification, only allowed in
@@ -34,7 +35,6 @@ class ClientConfigParser():
         self.oauth_code = config.get('oauth_code')
         self.username = config.get('username')
         self.password = config.get('password')
-        self.email = config.get('email')
         if os.path.isfile(APPLICATION_STATE_FILE):
             with open(APPLICATION_STATE_FILE) as f:
                 self.state = pickle.load(f).get('state', None)
@@ -47,10 +47,6 @@ class ClientConfigParser():
             logger.info(
                 'You must create an oauth client in the hub backend, and provide the client_id and client_secret'
                 'in the config !')
-            sys.exit(1)
-        if not self.email and not self.username and not self.password:
-            logger.info('Provide an email for the user you want to use the session with, or the username together with '
-                        'the password (more insecure).')
             sys.exit(1)
         if not self.oauth_code and (not self.username or not self.password):
             logger.info('You must either provide the oauth_code, which you can get sent to you via mail, by visiting '
@@ -84,7 +80,6 @@ class ClientConfigParser():
             'username': self.username,
             'password': self.password,
             'base_url': self.base_url,
-            'email': self.email
         }
         return kwargs
 
@@ -94,7 +89,7 @@ class ClientFactory():
     Client factory, which creates the right oauth client, depending
     on the passed kwargs to the constructor.
 
-    If the kwargs contain a value for the oauth_code and email,
+    If the kwargs contain a value for the oauth_code,
     it will construct a mail application client (authorization
     code grant), otherwise it wil construct a legacy application
     client (password grant).
@@ -103,7 +98,7 @@ class ClientFactory():
     RELATIVE_OAUTH_AUTHORIZATION_URL = 'oauth/authorize/'
 
     def __init__(self, client_id=None, client_secret=None, base_url=None, oauth_code=None, username=None,
-                 password=None, state=None, email=None, pre_fetch_token=None, rel_token_url=None, rel_auth_url=None):
+                 password=None, state=None, pre_fetch_token=None, rel_token_url=None, rel_auth_url=None):
         self.client_id = client_id
         self.client_secret = client_secret
         self.base_url = base_url
@@ -111,7 +106,6 @@ class ClientFactory():
         self.username = username
         self.password = password
         self.state = state
-        self.email = email
         self.pre_fetch_token = pre_fetch_token
         self.token_url = urllib.basejoin(self.base_url, (rel_token_url or self.RELATIVE_OAUTH_TOKEN_URL))
         self.authorization_base_url = urllib.basejoin(self.base_url, (rel_auth_url or
@@ -123,7 +117,7 @@ class ClientFactory():
         decides which client to construct and return
         :return:
         """
-        if self.oauth_code and self.email:
+        if self.oauth_code:
             client = self.get_mail_application_client()
         else:
             client = self.get_legacy_application_client()
@@ -135,13 +129,11 @@ class ClientFactory():
         Constructs a MailApplicationClient (authorization code grant)
         :return:
         """
-        client = MailApplicationClient(client_id=self.client_id, state=self.state)
+        client = WebApplicationPushClient(client_id=self.client_id, state=self.state)
         oauth = OAuth2Session(client=client)
         extra_kwargs = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
-            # instead of the redirect_uri, we use the email
-            'email': self.email
         }
         if self.pre_fetch_token:
             self.pre_fetch_token(oauth)
@@ -176,9 +168,9 @@ class ClientFactory():
         to get the oauth_code (code and state).
         :return:
         """
-        client = MailApplicationClient(client_id=self.client_id, state=self.state)
+        client = WebApplicationPushClient(client_id=self.client_id, state=self.state)
         oauth = OAuth2Session(client=client)
-        return oauth.authorization_url(self.authorization_base_url, email=self.email)
+        return oauth.authorization_url(self.authorization_base_url)
 
     def configure_client(self, client):
         """
@@ -201,7 +193,7 @@ class ClientFactory():
             # note: the original request function manages auto refresh if token time expired
             try:
                 res = request_func(*args, **kwargs)
-            except InvalidGrantError:
+            except errors.InvalidGrantError:
                 # case when token time expired and requests_oauthlib's auto refresh didn't work
                 # our only option is fetching token (works only for password grant)
                 if isinstance(client._client, LegacyApplicationClient):
@@ -221,7 +213,7 @@ class ClientFactory():
                 try:
                     # we try to refresh the token
                     client.refresh_token(client.auto_refresh_url)
-                except InvalidGrantError:
+                except errors.InvalidGrantError:
                     # The hub throws an InvalidGrantError if we can't refresh
                     if isinstance(client._client, LegacyApplicationClient):
                         # In case it's a password grant type client,
@@ -262,4 +254,23 @@ def get_client_for_config(config, rel_token_url=None, rel_auth_url=None, pre_fet
     client_config_parser = ClientConfigParser(config)
     client_factory = ClientFactory(pre_fetch_token=pre_fetch_token, rel_token_url=rel_token_url,
                                    rel_auth_url=rel_auth_url, state=state, **client_config_parser.get_factory_kwargs())
-    return client_factory.client
+    try:
+        client = client_factory.client
+        return client
+    except errors.InvalidClientError:
+        logger.info('Please provide a valid client_id and client_secret pair for a OAuth Client '
+                    'registered in the Hub backend !')
+        sys.exit(1)
+    except errors.UnauthorizedClientError:
+        grant_type = 'Authorization code via mail' if 'oauth_code' in config else 'Resource owner password-based'
+        logger.info('The authorization grant type for the OAuth Client you registered in the Hub '
+                    'backend is wrong ! {grant_type} should be selected !'.format(grant_type=grant_type))
+        sys.exit(1)
+    except errors.InvalidGrantError:
+        if 'oauth_code' in config:
+            logger.info('Your provided oauth_code is invalid or expired ! Remove the line from the config '
+                        'and start again with the new URL you\'ll be given !')
+        else:
+            logger.info('Your provided user credentials (username or password) are invalid ! Please provide '
+                        'valid user credentials !')
+        sys.exit(1)
