@@ -33,10 +33,8 @@ setup(name='holocloud-asset-pipeline',
       packages=find_packages(exclude=['docs', 'tests', 'tests.*']),
       install_requires=[
           'requests_oauthlib',
-          'websocket-client'
-      ],
-      dependency_links=[
-          'git+https://github.com/Innoactive/oauthlib-extras#egg=oauthlib-extras-1.0'
+          'websocket-client',
+          'oauthlib-extras'
       ],
       entry_points={
           'console_scripts': ['start-asset-pipeline=asset_pipeline.command_line:main'],
