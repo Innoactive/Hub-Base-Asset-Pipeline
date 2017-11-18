@@ -26,7 +26,7 @@ pip install -U git+https://github.com/Innoactive/Hub-Base-Asset-Pipeline.git@0.1
 
 Afterwards, your pipeline implementation should be based on `BaseRemoteAssetPipeline`. 
 
-You can establish a connection between your newly created pipeline and the holocloud® by creating 
+You can establish a connection between your newly created pipeline and the Innoactive Hub® by creating 
 a command line script like the following: 
 
 ```python
@@ -70,9 +70,9 @@ foo=bar
 
 ## Existing Pipelines
 
-The following pipelines have already been successfully implemented and integrated with the holocloud®:
+The following pipelines have already been successfully implemented and integrated with the Innoactive Hub®:
 
-- [PDF Conversion Pipeline](https://github.com/Innoactive/HOLOCLOUD-pdf-pipeline)
+- [PDF Conversion Pipeline](https://github.com/Innoactive/Hub-PDF-Pipeline)
 
   Reads in a pdf file and outputs a set of high-resolution images that can be easily rendered
 

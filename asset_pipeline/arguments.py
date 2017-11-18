@@ -42,9 +42,9 @@ def parse():
     )
     # add optional argument to specify the hostname for a connection
     connection_group = parser.add_argument_group('Connection')
-    connection_group.add_argument('-H', '--host', '--hostname', help='hostname at which to connect to the holocloud®')
-    # add optional argument to specify the port for a connection to holocloud®
-    connection_group.add_argument('-P', '--port', type=int, help='port at which to connect to the holocloud®')
+    connection_group.add_argument('-H', '--host', '--hostname', help='hostname at which to connect to the Innoactive Hub®')
+    # add optional argument to specify the port for a connection to Innoactive Hub®
+    connection_group.add_argument('-P', '--port', type=int, help='port at which to connect to the Innoactive Hub®')
     # add optional argument to specify whether or not to use ssl
     parser.add_argument('-S', '--ssl', dest='ssl', action='store_true', help='whether or not to enforce ssl')
     connection_group.set_defaults(**connection_defaults)

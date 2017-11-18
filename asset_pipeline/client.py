@@ -32,7 +32,7 @@ class ClientConfigParser():
         self.base_url = '{protocol}://{host}:{port}/'.format(protocol=self.protocol, host=self.host, port=self.port)
         self.client_id = config.get('client_id', os.environ.get('ASSET_PIPELINE_OAUTH_CLIENT_ID'))
         self.client_secret = config.get('client_secret', os.environ.get('ASSET_PIPELINE_OAUTH_CLIENT_SECRET'))
-        self.oauth_code = config.get('oauth_code', os.environ.get('ASSET_PIPELINE_OAUTH_AUTH_CODE'))
+        self.auth_code = config.get('auth_code', os.environ.get('ASSET_PIPELINE_OAUTH_AUTH_CODE'))
         self.username = config.get('username', os.environ.get('ASSET_PIPELINE_OAUTH_USERNAME'))
         self.password = config.get('password', os.environ.get('ASSET_PIPELINE_OAUTH_PASSWORD'))
         if os.path.isfile(APPLICATION_STATE_FILE):
@@ -48,15 +48,15 @@ class ClientConfigParser():
                 'You must create an oauth client in the hub backend, and provide the client_id and client_secret'
                 'in the config !')
             sys.exit(1)
-        if not self.oauth_code and (not self.username or not self.password):
-            logger.info('You must either provide the oauth_code, which you can get sent to you via mail, by visiting '
+        if not self.auth_code and (not self.username or not self.password):
+            logger.info('You must either provide the auth_code, which you can get sent to you via mail, by visiting '
                         'the following url:')
             logger.info(self.get_authorization_url())
             logger.info('or, the more insecure option, you can provide an username and password (for an hub user) in '
                         'the config.')
             sys.exit(1)
-        if self.oauth_code and not self.state:
-            logger.info('You used some url for getting the oauth_code, not provided by this instance !')
+        if self.auth_code and not self.state:
+            logger.info('You used some url for getting the auth_code, not provided by this instance !')
             logger.info('Please only use the following url for your next secret grant:')
             logger.info(self.get_authorization_url())
             logger.info('Note, that the url changes !')
@@ -76,7 +76,7 @@ class ClientConfigParser():
         kwargs = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
-            'oauth_code': self.oauth_code,
+            'auth_code': self.auth_code,
             'username': self.username,
             'password': self.password,
             'base_url': self.base_url,
@@ -89,7 +89,7 @@ class ClientFactory():
     Client factory, which creates the right oauth client, depending
     on the passed kwargs to the constructor.
 
-    If the kwargs contain a value for the oauth_code,
+    If the kwargs contain a value for the auth_code,
     it will construct a mail application client (authorization
     code grant), otherwise it wil construct a legacy application
     client (password grant).
@@ -97,12 +97,12 @@ class ClientFactory():
     RELATIVE_OAUTH_TOKEN_URL = 'oauth/token/'
     RELATIVE_OAUTH_AUTHORIZATION_URL = 'oauth/authorize/'
 
-    def __init__(self, client_id=None, client_secret=None, base_url=None, oauth_code=None, username=None,
+    def __init__(self, client_id=None, client_secret=None, base_url=None, auth_code=None, username=None,
                  password=None, state=None, pre_fetch_token=None, rel_token_url=None, rel_auth_url=None):
         self.client_id = client_id
         self.client_secret = client_secret
         self.base_url = base_url
-        self.oauth_code = oauth_code
+        self.auth_code = auth_code
         self.username = username
         self.password = password
         self.state = state
@@ -117,7 +117,7 @@ class ClientFactory():
         decides which client to construct and return
         :return:
         """
-        if self.oauth_code:
+        if self.auth_code:
             client = self.get_mail_application_client()
         else:
             client = self.get_legacy_application_client()
@@ -137,7 +137,7 @@ class ClientFactory():
         }
         if self.pre_fetch_token:
             self.pre_fetch_token(oauth)
-        oauth.fetch_token(self.token_url, authorization_response=self.oauth_code, **extra_kwargs)
+        oauth.fetch_token(self.token_url, authorization_response=self.auth_code, **extra_kwargs)
         # allows requests_oauthlib to auto refresh expired access tokens
         oauth.auto_refresh_url = self.token_url
         oauth.auto_refresh_kwargs = extra_kwargs
@@ -165,7 +165,7 @@ class ClientFactory():
     def get_authorization_url_and_state(self):
         """
         Constructs an authorization url, which the user can visit
-        to get the oauth_code (code and state).
+        to get the auth_code (code and state).
         :return:
         """
         client = WebApplicationPushClient(client_id=self.client_id, state=self.state)
@@ -262,13 +262,13 @@ def get_client_for_config(config, rel_token_url=None, rel_auth_url=None, pre_fet
                     'registered in the Hub backend !')
         sys.exit(1)
     except errors.UnauthorizedClientError:
-        grant_type = 'Authorization code via mail' if 'oauth_code' in config else 'Resource owner password-based'
+        grant_type = 'Authorization code via mail' if 'auth_code' in config else 'Resource owner password-based'
         logger.info('The authorization grant type for the OAuth Client you registered in the Hub '
                     'backend is wrong ! {grant_type} should be selected !'.format(grant_type=grant_type))
         sys.exit(1)
     except errors.InvalidGrantError:
-        if 'oauth_code' in config:
-            logger.info('Your provided oauth_code is invalid or expired ! Remove the line from the config '
+        if 'auth_code' in config:
+            logger.info('Your provided auth_code is invalid or expired ! Remove the line from the config '
                         'and start again with the new URL you\'ll be given !')
         else:
             logger.info('Your provided user credentials (username or password) are invalid ! Please provide '
