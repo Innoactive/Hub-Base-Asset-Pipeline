@@ -23,18 +23,18 @@ class ClientConfigParser():
     def __init__(self, config):
         self.config = config
         self.protocol = config.get('protocol', None) or 'http'
-        self.host = config.get('host')
-        self.port = config.get('port')
+        self.host = config.get('host', os.environ.get('ASSET_PIPELINE_HOST'))
+        self.port = config.get('port', os.environ.get('ASSET_PIPELINE_PORT'))
         self.ssl = config.get('ssl')
         # only if we didn't specify protocol explicitly
         if self.ssl and not config.get('protocpl'):
             self.protocol += 's'
         self.base_url = '{protocol}://{host}:{port}/'.format(protocol=self.protocol, host=self.host, port=self.port)
-        self.client_id = config.get('client_id')
-        self.client_secret = config.get('client_secret')
-        self.oauth_code = config.get('oauth_code')
-        self.username = config.get('username')
-        self.password = config.get('password')
+        self.client_id = config.get('client_id', os.environ.get('ASSET_PIPELINE_OAUTH_CLIENT_ID'))
+        self.client_secret = config.get('client_secret', os.environ.get('ASSET_PIPELINE_OAUTH_CLIENT_SECRET'))
+        self.oauth_code = config.get('oauth_code', os.environ.get('ASSET_PIPELINE_OAUTH_AUTH_CODE'))
+        self.username = config.get('username', os.environ.get('ASSET_PIPELINE_OAUTH_USERNAME'))
+        self.password = config.get('password', os.environ.get('ASSET_PIPELINE_OAUTH_PASSWORD'))
         if os.path.isfile(APPLICATION_STATE_FILE):
             with open(APPLICATION_STATE_FILE) as f:
                 self.state = pickle.load(f).get('state', None)
