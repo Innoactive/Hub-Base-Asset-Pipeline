@@ -1,4 +1,4 @@
-# holocloud - Asset Pipeline
+# Innoactive® Hub - Asset Pipeline
 
 This is the base repository for any asset pipeline that can work together with the holocloud.
 
