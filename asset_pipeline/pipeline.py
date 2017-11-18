@@ -106,7 +106,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
     """
     # default protocol for downloads is http
     protocol = 'http'
-    # the (web)socket over which we'll communicate with the holocloud®
+    # the (web)socket over which we'll communicate with the Innoactive Hub®
     socket = None
     # the host to connect to
     host = 'localhost'
@@ -162,7 +162,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         :param socket: the newly opened websocket instance
         :return:
         """
-        logger.info('Successfully connected to holocloud®!')
+        logger.info('Successfully connected to Innoactive® Hub!')
 
     @staticmethod
     def on_socket_close(socket):
@@ -171,7 +171,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
         :param socket: the websocket instance which was closed
         :return:
         """
-        logger.info('Connection to holocloud® closed')
+        logger.info('Connection to Innoactive® Hub closed')
 
     @staticmethod
     def on_socket_error(socket, error):
@@ -270,7 +270,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
 
     def start(self):
         """
-        start this asset pipeline and connect it to the holocloud® to listen for updates / working instructions
+        start this asset pipeline and connect it to the Innoactive Hub® to listen for updates / working instructions
         :return:
         """
         logger.info('trying to connect to {}:{}'.format(self.host, self.port))
@@ -346,7 +346,7 @@ class PlatformSpecificAssetPipelineMixin(object):
 
     def start(self):
         """
-        start this asset pipeline and connect it to the holocloud® to listen for updates / working instructions
+        start this asset pipeline and connect it to the Innoactive Hub® to listen for updates / working instructions
         also, find out platform data before proceeding
         :return:
         """

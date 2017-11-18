@@ -21,15 +21,15 @@ def readme():
                 return f.read()
 
 
-setup(name='holocloud-asset-pipeline',
-      version='0.1',
-      description='Tools to connect a new asset pipeline to the holocloud®',
+setup(name='hub-asset-pipeline',
+      version='1.1.1',
+      description='Tools to connect a new asset pipeline to the Innoactive® Hub',
       long_description=readme(),
-      url='http://github.com/Innoactive/HOLOCLOUD-pipeline-connector',
+      url='https://github.com/Innoactive/Hub-Base-Asset-Pipeline',
       author='Benedikt Reiser',
       author_email='benedikt.reiser@gmail.com',
       license='MIT',
-      keywords=['holocloud', 'assets', 'pipeline', 'connector', 'websocket'],
+      keywords=['innoactive', 'hub', 'assets', 'pipeline', 'connector', 'websocket'],
       packages=find_packages(exclude=['docs', 'tests', 'tests.*']),
       install_requires=[
           'requests_oauthlib',
