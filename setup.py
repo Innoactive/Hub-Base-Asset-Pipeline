@@ -20,6 +20,7 @@ def readme():
             with open(readme_name) as f:
                 return f.read()
 
+
 setup(name='holocloud-asset-pipeline',
       version='0.1',
       description='Tools to connect a new asset pipeline to the holocloud®',
@@ -32,7 +33,8 @@ setup(name='holocloud-asset-pipeline',
       packages=find_packages(exclude=['docs', 'tests', 'tests.*']),
       install_requires=[
           'requests_oauthlib',
-          'websocket-client'
+          'websocket-client',
+          'oauthlib-extras'
       ],
       entry_points={
           'console_scripts': ['start-asset-pipeline=asset_pipeline.command_line:main'],
