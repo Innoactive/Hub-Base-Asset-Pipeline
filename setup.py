@@ -32,6 +32,7 @@ setup(name='hub-asset-pipeline',
       keywords=['innoactive', 'hub', 'assets', 'pipeline', 'connector', 'websocket'],
       packages=find_packages(exclude=['docs', 'tests', 'tests.*']),
       install_requires=[
+          'oauthlib==1.1.2',
           'requests_oauthlib==0.8.0',
           'websocket-client==0.44.0',
           'oauthlib-extras'
