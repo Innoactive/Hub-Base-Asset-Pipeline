@@ -1,5 +1,4 @@
 import json
-from enum import Enum
 from collections import OrderedDict
 from urlparse import urljoin, parse_qs
 from unittest import TestCase
@@ -35,12 +34,14 @@ TOKEN = {
     'refresh_token': REFRESH_TOKEN
 }
 
-class Error(Enum):
+
+class Error(object):
     """
     OAuth Server Errors
     """
     INVALID_ACCESS_TOKEN = 1
     INVALID_REFRESH_TOKEN = 2
+
 
 OAUTH_ERROR_MESSAGES = {
     # error status codes and responses for the mock oauth server
@@ -48,6 +49,7 @@ OAUTH_ERROR_MESSAGES = {
     Error.INVALID_ACCESS_TOKEN: (401, '{"detail": "Authentication credentials were not provided."}'),
     Error.INVALID_REFRESH_TOKEN: (401, '{"error": "invalid_grant"}')
 }
+
 
 def get_response(content, request, status_code=200, is_json=False):
     """
@@ -64,6 +66,7 @@ def get_response(content, request, status_code=200, is_json=False):
     response._content = json.dumps(content) if is_json else content
     return response
 
+
 def get_data(body):
     """
     Helper function to get the POST data of a 'prepared request'
@@ -74,6 +77,7 @@ def get_data(body):
     for key, value in data.items():
         data[key] = value[0]
     return data
+
 
 def match_token_request(request):
     """
@@ -99,8 +103,11 @@ def match_token_request(request):
                     return get_response(TOKEN, request, is_json=True)
                 else:
                     # invalid refresh token
-                    return get_response(OAUTH_ERROR_MESSAGES[Error.INVALID_REFRESH_TOKEN][1], request,
-                                        status_code=OAUTH_ERROR_MESSAGES[Error.INVALID_REFRESH_TOKEN][0])
+                    return get_response(
+                        OAUTH_ERROR_MESSAGES[Error.INVALID_REFRESH_TOKEN][1], request,
+                        status_code=OAUTH_ERROR_MESSAGES[Error.INVALID_REFRESH_TOKEN][0]
+                    )
+
 
 def match_mock_endpoint(request):
     """
@@ -118,8 +125,10 @@ def match_mock_endpoint(request):
                     return get_response(RESPONSE, request)
                 else:
                     # return error message
-                    return get_response(OAUTH_ERROR_MESSAGES[Error.INVALID_ACCESS_TOKEN][1], request,
-                                        status_code=OAUTH_ERROR_MESSAGES[Error.INVALID_ACCESS_TOKEN][0])
+                    return get_response(
+                        OAUTH_ERROR_MESSAGES[Error.INVALID_ACCESS_TOKEN][1], request,
+                        status_code=OAUTH_ERROR_MESSAGES[Error.INVALID_ACCESS_TOKEN][0]
+                    )
 
 
 class OAuthMockServer(TestCase):

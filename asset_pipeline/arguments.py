@@ -4,7 +4,7 @@ import ConfigParser
 import os
 
 
-def parse():
+def build_parser():
     # We got a 2-step configuration parsing process
     # 1. parse the provided config file (if any) to get some defaults
     # 2. parse the provided command line options which will override the config file settings if applicable
@@ -13,12 +13,13 @@ def parse():
     # ============================
     # We make this parser with add_help=False so that it doesn't parse -h and print help.
     conf_parser = argparse.ArgumentParser()
-    conf_parser.add_argument('-c', '--config-file', '--config-path', type=str, metavar='FILE',
-                             help='path to an optional configuration file (configparser format). These settings '
-                                  'allow overriding the connection settings and can provide additional pipeline-'
-                                  'specific settings')
-    # fallback configuration file path (defaults to <current-working-directory>/pipeline.ini
-    conf_parser.set_defaults(config_file=os.path.join(os.curdir, 'pipeline.ini'))
+    conf_parser.add_argument('-c', '--config-file', '--config-path', type=str, metavar='FILE', help=(
+        'path to an optional configuration file (configparser format). These settings '
+        'allow overriding the connection settings and can provide additional pipeline-'
+        'specific settings'
+    ))
+    # fallback configuration file path (defaults to <current-working-directory>/config.ini
+    conf_parser.set_defaults(config_file=os.path.join(os.curdir, 'config.ini'))
     # do a partial parse to only find the configuration file option (if any)
     args, remaining_argv = conf_parser.parse_known_args()
 
@@ -33,7 +34,7 @@ def parse():
             connection_defaults.update(config.items(section))
 
     # ================================
-    # Step 1 - Parse rest of arguments
+    # Step 2 - Parse rest of arguments
     # ================================
     parser = argparse.ArgumentParser(
         description='Process Asset Pipeline configuration arguments.',
@@ -48,5 +49,11 @@ def parse():
     # add optional argument to specify whether or not to use ssl
     parser.add_argument('-S', '--ssl', dest='ssl', action='store_true', help='whether or not to enforce ssl')
     connection_group.set_defaults(**connection_defaults)
+    return parser, remaining_argv
+
+
+def parse(parser=None, remaining_argv=None):
+    if parser is None:
+        parser, remaining_argv = build_parser()
     # finally, get all parsed arguments
     return vars(parser.parse_args(remaining_argv))

@@ -1,4 +1,4 @@
-# Innoactive® Hub - Asset Pipeline
+# Innoactive Hub - Asset Pipeline
 
 This is the base repository for any asset pipeline that can work together with the holocloud.
 
@@ -10,10 +10,10 @@ to more complex tasks like asset classification.
 
 Remote asset pipelines can be scaled individually and independently of the holocloud.
 
-**Any implementation of a specific asset pipeline (e.g. for pdf files or 3d models in the fbx format) 
-will use this connector package and its base pipeline implementation as a pip package.**
+**Any implementation of a specific asset pipeline will use this connector package and its base pipeline implementation 
+as a pip package.**
 
-For more information on the architecture of the holocloud ecosystem, please refer to the [holocloud's
+For more information on the architecture of the Innoactive Hub ecosystem, please refer to the [
 documentation](https://github.com/Innoactive/Hub-Backend) directly.
 
 ## How to Use
@@ -33,18 +33,15 @@ a command line script like the following:
 import asset_pipeline.arguments as arguments
 from <your-pipeline-module> import <YourAssetPipelineImplementation>
 
-
 def main():
     # parse all available configuration information
     config = arguments.parse()
     print config
-    # create new RemoteAssetPipeline instance
-    # and connect to socket.io server
+    # create new RemoteAssetPipeline instance and connect to the Hub
     asset_pipeline = <YourAssetPipelineImplementation>(
         config=config
     )
     asset_pipeline.start()
-
 
 if __name__ == "__main__":
     main()
@@ -73,9 +70,5 @@ foo=bar
 The following pipelines have already been successfully implemented and integrated with the Innoactive Hub®:
 
 - [PDF Conversion Pipeline](https://github.com/Innoactive/Hub-PDF-Pipeline)
-
+  
   Reads in a pdf file and outputs a set of high-resolution images that can be easily rendered
-
-- [Unity FBX Conversion Pipeline](https://github.com/Innoactive/HOLOCLOUD-fbx-pipeline-unity)
-
-  Reads in a fbx or zipped fbx file and outputs a Unity Asset Bundle which can be loaded at runtime

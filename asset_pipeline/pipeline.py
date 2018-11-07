@@ -119,10 +119,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
     # dictionary of additional headers to be included in an connection attempt
     additional_headers = {}
 
-    def __init__(self,
-                 config=None,
-                 *args,
-                 **kwargs):
+    def __init__(self, config=None, *args, **kwargs):
         # call parent constructor (taking care of config validation)
         super(BaseRemoteAssetPipeline, self).__init__(config=config, *args, **kwargs)
         # update host and port values
@@ -308,10 +305,7 @@ class PlatformSpecificAssetPipelineMixin(object):
         PLATFORM_SLUG_HEADER: 'unknown'
     }
 
-    def __init__(self,
-                 config=None,
-                 *args,
-                 **kwargs):
+    def __init__(self, config=None, *args, **kwargs):
         # call parent constructor (taking care of config validation)
         super(PlatformSpecificAssetPipelineMixin, self).__init__(config=config, *args, **kwargs)
         # handle the platform slug parameter
@@ -370,8 +364,9 @@ class PlatformSpecificAssetPipelineMixin(object):
         :param slug:
         :return:
         """
-        url = '{protocol}://{host}:{port}/api/platforms/slugs/{slug}'.format(protocol=self.protocol, host=self.host,
-                                                                             port=self.port, slug=slug)
+        url = '{protocol}://{host}:{port}/api/platforms/slugs/{slug}'.format(
+            protocol=self.protocol, host=self.host, port=self.port, slug=slug
+        )
         response = self.client.request("GET", url)
         if 200 <= response.status_code < 300:
             return response.json()

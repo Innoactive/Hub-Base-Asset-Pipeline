@@ -7,7 +7,7 @@ from .pipeline import AbstractAssetPipeline, \
     NoopRemoteAssetPipeline, \
     PlatformSpecificAssetPipelineMixin
 from .protocol import *
-
+from .chunked_upload import ChunkedUploadMixin
 
 __all__ = [
     'logger',
@@ -16,7 +16,8 @@ __all__ = [
     'NoopRemoteAssetPipeline',
     'PlatformSpecificAssetPipelineMixin',
     'ConversionState',
-    'MessageType'
+    'MessageType',
+    'ChunkedUploadMixin'
 ]
 
 if __name__ == '__main__':

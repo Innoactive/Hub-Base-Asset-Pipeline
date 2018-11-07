@@ -35,7 +35,8 @@ setup(name='hub-asset-pipeline',
           'oauthlib==1.1.2',
           'requests_oauthlib==0.8.0',
           'websocket-client==0.44.0',
-          'oauthlib-extras'
+          'oauthlib-extras',
+          'requests'
       ],
       entry_points={
           'console_scripts': ['start-asset-pipeline=asset_pipeline.command_line:main'],
