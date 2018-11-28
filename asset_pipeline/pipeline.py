@@ -86,15 +86,14 @@ class AbstractAssetPipeline(object):
         """
         raise NotImplementedError('Subclasses of the AbstractAssetPipeline must implement the post_execute method')
 
-    def supports(self, asset_data):
+    def supports_upload_file(self, asset_data):
         """
         simple method to check whether this pipeline supports the given file
         :param asset_data: all available data about the asset to be converted
-        :return:
         """
         # get the filename of the asset to be handled
         input_file = asset_data.get('upload', {}).get('file')
-        return path.splitext(input_file)[1] in self.supported_filetypes
+        return path.splitext(input_file)[1][1:] in self.supported_filetypes
 
     def __str__(self):
         return '%s' % self.__class__.__name__
@@ -202,8 +201,10 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
                         logger.info('Starting to run pipeline... Model data is %s' % asset_data)
                         if self.supports(asset_data):
                             self.run(asset_data)
+                        if self.supports_upload_file(asset_data):
+                            logger.info("Everything went fine!")
                         else:
-                            logger.info("Could not handle provided asset %s" % asset_data)
+                            logger.error("Could not handle provided asset %s" % asset_data)
                     else:
                         logger.warn('Should start converting, but data is missing from message: \n%s' % message)
 
