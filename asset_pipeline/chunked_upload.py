@@ -27,12 +27,12 @@ class ChunkedUploadMixin(object):
             raise Exception('Could not upload file.')
         return response.json()['file_url']
 
-    def _chunked_upload_file(self, base_url=None, file_path=None, early_return_on_error=True, md5=None):
+    def _chunked_upload_file(self, base_url=None, file_path=None, early_return_on_error=True, md5=None, chunk_size_bytes=2<<20):
         """
         create generic models with chunkeduploads
-        """
-        # default chunk size in bytes
-        chunk_size_bytes = 20 * 1024
+
+        :param chunk_size_bytes: default value is 2 MiB
+        """    
 
         chunked_upload_url_suffix = 'chunked_uploads/'
         chunked_upload_commit_suffix = 'commit/'
@@ -130,3 +130,5 @@ class ChunkedUploadMixin(object):
         return self.client.request('POST', url, files={
             'md5': ('', md5)
         })
+
+
