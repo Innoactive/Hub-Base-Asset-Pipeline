@@ -202,7 +202,7 @@ class BaseRemoteAssetPipeline(AbstractAssetPipeline):
                         if self.supports(asset_data):
                             self.run(asset_data)
                         if self.supports_upload_file(asset_data):
-                            logger.info("Everything went fine!")
+                            logger.warning("Everything went fine! but nothing was converted!")
                         else:
                             logger.error("Could not handle provided asset %s" % asset_data)
                     else:
