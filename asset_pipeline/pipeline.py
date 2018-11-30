@@ -42,14 +42,6 @@ class AbstractAssetPipeline(object):
         """
         raise NotImplementedError('Subclasses of the AbstractAssetPipeline must implement the validate_configuration method')
 
-    def supports(self, input_file):
-        """
-        simple method to check whether this converter supports the given file
-        :param input_file: the file to be converted (potentially)
-        :return:
-        """
-        return path.split(input_file)[1] in self.supported_filetypes
-
     def run(self, asset_data):
         """
         runs the pipeline through by executing (in this order):
